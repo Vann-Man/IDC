@@ -9,7 +9,8 @@ while True:
     cv2.imshow('Camera Feed', image)
     if cv2.waitKey(1) & 0xFF == ord('t'):
         cv2.imwrite(f"photos_sandwich/{uuid.uuid4()}.jpg", image)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+        print("Photo taken")
+    elif cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 cam.release()
