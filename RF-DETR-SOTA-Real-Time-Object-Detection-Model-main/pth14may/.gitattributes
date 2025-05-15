@@ -1,0 +1,4 @@
+*.pth filter=lfs diff=lfs merge=lfs -text
+checkpoint_best_ema(1).pth filter=lfs diff=lfs merge=lfs -text
+checkpoint_best_regular.pth filter=lfs diff=lfs merge=lfs -text
+checkpoint_best_total.pth filter=lfs diff=lfs merge=lfs -text
