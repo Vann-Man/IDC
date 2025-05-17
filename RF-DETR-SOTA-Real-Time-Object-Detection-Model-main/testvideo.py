@@ -25,8 +25,7 @@ label_annotator = sv.LabelAnnotator(
     text_scale=0.5,
     text_thickness=1
 )
-cv2.ocl.setUseOpenCL(True)
-print(cv2.ocl.useOpenCL())  # Should return True
+
 cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 frame_count = 0
 
