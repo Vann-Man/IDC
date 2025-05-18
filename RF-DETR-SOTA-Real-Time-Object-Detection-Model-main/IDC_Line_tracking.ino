@@ -496,6 +496,11 @@ void scanForObject(String desiredObject) {
       Serial.print("Camera rotated to position: ");
       Serial.println(positions[i]);
 
+      // Clear the serial buffer before waiting for new data
+      while (Serial.available() > 0) {
+        Serial.read(); // Discard any leftover data
+      }
+
       // Wait until a command is received
       Serial.println("Waiting for command...");
       while (Serial.available() == 0) {
