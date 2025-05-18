@@ -517,6 +517,10 @@ void scanForObject(String desiredObject) {
         data += incomingChar; // Append the character to the data string
       }
 
+      // Debugging output for received data
+      Serial.print("Received data: ");
+      Serial.println(data);
+
       // Process the received command only if a new line was received
       if (data.length() > 0) {
         processCommand(data); // Process the received command
