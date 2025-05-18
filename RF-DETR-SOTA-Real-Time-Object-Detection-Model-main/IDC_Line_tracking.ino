@@ -493,7 +493,14 @@ void scanForObject(String desiredObject) {
     for (int i = 0; i < 3; i++) {
       // Rotate the camera to the current position
       cameraServo.write(positions[i]);
-      delay(1000); // Allow time for the camera to stabilize
+      Serial.print("Camera rotated to position: ");
+      Serial.println(positions[i]);
+
+      // Wait until a command is received
+      Serial.println("Waiting for command...");
+      while (Serial.available() == 0) {
+        // Do nothing, just wait for data to become available
+      }
 
       // Wait for a new line of data from the Raspberry Pi
       String data = "";
