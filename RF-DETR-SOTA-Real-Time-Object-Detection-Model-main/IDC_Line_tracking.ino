@@ -1,5 +1,4 @@
-#include <PWMServo.h>
-
+#include <Servo.h>
 
 #include <avdweb_AnalogReadFast.h>
 #include <CytronMotorDriver.h>
@@ -7,21 +6,21 @@
 
 
 // Configure the motor driver
-CytronMD leftMotor(PWM_PWM, 3, 9);   // PWM 1A = Pin 3, PWM 1B = Pin 9.
-CytronMD rightMotor(PWM_PWM, 10, 11); // PWM 2A = Pin 10, PWM 2B = Pin 11.
+CytronMD leftMotor(PWM_PWM, 3, 4);   // PWM 1A = Pin 3, PWM 1B = Pin 9.
+CytronMD rightMotor(PWM_PWM, 11, 12); // PWM 2A = Pin 10, PWM 2B = Pin 11.
 
 
-PWMServo clawServo;
-PWMServo liftServo;
-PWMServo cameraServo;
+Servo clawServo;
+Servo liftServo;
+Servo cameraServo;
 
 //Declare pin shortcuts
 #define left_IR A1
 #define right_IR A2
 #define leftmost_IR A3
 #define clawServoPin 6
-#define liftServoPin 13
-#define cameraServoPin 12
+#define liftServoPin 2
+#define cameraServoPin 13
 
 /*---     VARIABLE DECLARATION      ---*/
 
@@ -41,7 +40,7 @@ float leftMotorSpeed, rightMotorSpeed;
 
 // miscellaneous variables
 unsigned long time_now;
-unsigned long start_time;
+unsigned long startTime;
 bool junctionDetect;
 bool hardCodedCompletion;
 // constants to calibrate 
@@ -53,10 +52,10 @@ const int leftmost_IR_Threshold = 600;
 const int left_IR_Minimum = 30;
 const int right_IR_Minimum = 35;
 const int leftmost_IR_Minimum = 50;
-int baseSpeed = 100;
-float KP = 0.30 ; // proportional - how sensitive to turn every time
+int baseSpeed = 110;
+float KP = 0.27 ; // proportional - how sensitive to turn every time
 float KI = 0.0; // integral - how much correction from past error, reducing steady state error over time
-float KD = 1.3; // derivative - how much correction from differences from error - pastError over time
+float KD = 1.0; // derivative - how much correction from differences from error - pastError over time
 
 
 
@@ -64,12 +63,15 @@ float KD = 1.3; // derivative - how much correction from differences from error 
 void pid_loop();
 void calibration_code();
 bool Junction();
+bool whiteJunction();
 void lineFollowTimed(unsigned long duration);
 void lineFollowJunction();
 void turnLeft(unsigned long duration);
 void turnRight(unsigned long duration);
 void moveForward(unsigned long duration);
 void moveBackward(unsigned long duration);
+void liftPosition(int position, int reduceSpeed);
+void clawPosition(int position, int reduceSpeed);
 
 
 
@@ -79,11 +81,14 @@ void setup() {
   pinMode(right_IR, INPUT);
   pinMode(leftmost_IR, INPUT);
   liftServo.attach(liftServoPin);
-  //clawServo.attach(clawServoPin);
+  clawServo.attach(clawServoPin);
   //cameraServo.attach(cameraServoPin);
+  liftServo.write(0);
+  clawServo.write(0); // 90 is close, 0 is open
   junctionDetect = false;
   hardCodedCompletion = false;
   Serial.begin(9600);
+  delay(500);
 }
 
 void loop() {
@@ -97,13 +102,13 @@ void loop() {
   }
 
   // calibration_code();
-
+  
   if (!hardCodedCompletion) {
-    // route1();
-    liftPosition(90, 30);
+    route1();
+    // liftPosition(0, 10);
+    //clawPosition(90, 10);
     hardCodedCompletion = true;
   }
-
 
 }
 
@@ -111,23 +116,65 @@ void loop() {
 /*--- Hard-coded Routes ---*/
 
 void route1() {
-    moveForward(800);
+    moveForward(900);
     Serial.println("bing bong forward");
     delay(1000);
-    turnLeft(485);
+    turnLeft(430);
     Serial.println("left bing bong");
     delay(400);
-    
     junctionDetect = false;
-    
     lineFollowJunction();
+    delay(500);
+    moveForward(150);
+    delay(500);
+    // claw logic
+    clawPosition(95, 3);
+    turnLeft(1000);
+    Serial.println("turn around bang");
+    delay(500);
+    lineFollowWhiteJunction();
+    calibration_code();
+    Serial.println("found tray");
+    delay(500);
+    moveForward(300);
+    delay(500);
+    turnRight(450);
+    Serial.println("turned to tray");
+    delay(500);
+    clawPosition(0, 3);
+    Serial.println("released claw");
+    moveBackward(200);
+    turnLeft(1000);
+    Serial.println("moved back and turned toward line")
+
+
+    // create LINE FOLLOW WHITE JUNCTION CODE!
 }
 
-/*--- Arduino-Specific Functions ---*/
+void routeForBox1() {
+  Serial.println("route for box 1");
+  // Add your hardcoded logic for BURGER here
+}
+
+void routeForBox2() {
+  Serial.println("route for box 2");
+  // Add your hardcoded logic for HOTDOG here
+}
+
+void routeForBox3() {
+  Serial.println("route for box 3");
+  // Add your hardcoded logic for SANDWICH here
+}
+
+
+
+
+/*--- Arduino-Specific Functions -- -*/
 
 void pid_loop() {
   int left_IR_value = analogReadFast(left_IR);
   int right_IR_value = analogReadFast(right_IR); 
+
 
   // adjusts values between 0 - 100 as both of them have differing thresholds, keeps within same range so PID error translates for both
   int leftAdjusted = map(left_IR_value, left_IR_Minimum, left_IR_Threshold, 0, 100);
@@ -229,6 +276,26 @@ bool Junction() {
   return false;
 }
 
+bool whiteJunction(unsigned long duration) {
+  int leftmost = analogReadFast(leftmost_IR);
+  int left = analogReadFast(left_IR);
+  int right = analogReadFast(right_IR);
+  Serial.println("Checking for white junction...");
+  // Detects if both left and right sensors see white
+  if ((left <= (left_IR_Minimum + 100)) && (right <= (right_IR_Minimum + 100))) {
+    if (startTime == 0) {
+      startTime = millis(); // Start the timer when the condition is first met
+    }
+    if (millis() - startTime >= duration) {
+      return true; // Return true if the condition is met for the stipulated duration
+    }
+  } else {
+    startTime = 0; // Reset the timer if the condition is not met
+  }
+
+  return false; // Return false if the condition is not met for the stipulated duration
+}
+
 void lineFollowTimed(unsigned long duration) {
   unsigned long startTime = millis(); // start time
 
@@ -241,11 +308,23 @@ void lineFollowTimed(unsigned long duration) {
 }
 
 void lineFollowJunction() {
-  if (junctionDetect) {
-    // If the junction has already been detected, do nothing
-    return;
-  }
+  junctionDetect = false;
   while (!Junction()) { // If junction not detected, keep following the line
+    pid_loop();
+    Serial.print("still junctioning...");
+  }
+    junctionDetect = true;
+    leftMotor.setSpeed(0);
+    rightMotor.setSpeed(0);
+
+    Serial.println("junction detected!");
+  
+}
+
+void lineFollowWhiteJunction() {
+  junctionDetect = false;
+  startTime = 0; // Tracks when the condition was first met
+  while (!whiteJunction(800)) { // If junction not detected, keep following the line
     pid_loop();
     Serial.print("still junctioning...");
   }
@@ -255,7 +334,6 @@ void lineFollowJunction() {
     Serial.println("junction detected!");
   
 }
-
 /*--- Basic Movement Functions ---*/
 
 void turnLeft(unsigned long duration) {
@@ -293,7 +371,7 @@ void moveForward(unsigned long duration) {
 
   while (millis() - startTime < duration) { // while time taken less than duration
     leftMotor.setSpeed(180);
-    rightMotor.setSpeed(190);
+    rightMotor.setSpeed(180);
   }
 
   leftMotor.setSpeed(0);
@@ -317,18 +395,24 @@ void moveBackward(unsigned long duration) {
 }
 
 void clawPosition(int position, int reduceSpeed) {
-  int currentPosition = clawServo.read(); // Get the current position of the claw servo
-  if (currentPosition < position) {
+  int currentPosition = clawServo.read(); // Get the current position of the lift servo
+  Serial.print("current position: ");
+
+  while (clawServo.read() < position) {
     // Move to the target position incrementally
     for (int i = currentPosition; i <= position; i++) {
       clawServo.write(i);
-      delay(reduceSpeed);
+      Serial.println(clawServo.read());
+      delay(reduceSpeed); 
     }
-  } else {
-    // Move to the target position decrementally
+  } 
+  
+  while (clawServo.read() > position) {
     for (int i = currentPosition; i >= position; i--) {
       clawServo.write(i);
-      delay(reduceSpeed); 
+      Serial.println(clawServo.read());
+      delay(reduceSpeed);
+
     }
   }
 }
@@ -341,7 +425,7 @@ void liftPosition(int position, int reduceSpeed) {
     // Move to the target position incrementally
     for (int i = currentPosition; i <= position; i++) {
       liftServo.write(i);
-      Serial.println(currentPosition);
+      Serial.println(liftServo.read());
       delay(reduceSpeed); 
     }
   } 
@@ -349,7 +433,7 @@ void liftPosition(int position, int reduceSpeed) {
   while (liftServo.read() > position) {
     for (int i = currentPosition; i >= position; i--) {
       liftServo.write(i);
-      Serial.println(currentPosition);
+      Serial.println(liftServo.read());
       delay(reduceSpeed);
 
     }
@@ -391,4 +475,65 @@ void processCommand(String command) {
   Serial.print("Width: ");
   Serial.println(object_width);
   Serial.print("Height: ");
+  Serial.println(object_height);
+  Serial.print("Center X: ");
+  Serial.println(object_center_x);
+  Serial.print("Center Y: ");
+  Serial.println(object_center_y);
+}
+
+void scanForObject(String desiredObject) {
+  int positions[] = {45, 90, 135}; // Camera positions to scan (in degrees)
+  bool objectFound = false;
+  int detectedPosition = -1; // Variable to store the index of the detected position
+
+  while (!objectFound) { // Keep scanning until the desired object is found
+    Serial.println("Starting a new scan...");
+
+    for (int i = 0; i < 3; i++) {
+      // Rotate the camera to the current position
+      cameraServo.write(positions[i]);
+      delay(1000); // Allow time for the camera to stabilize
+
+      // Wait for a new line of data from the Raspberry Pi
+      String data = "";
+      while (Serial.available() > 0) {
+        char incomingChar = Serial.read(); // Read one character at a time
+        if (incomingChar == '\n') { // Check for the end of the line
+          break; // Exit the loop when a new line is received
+        }
+        data += incomingChar; // Append the character to the data string
+      }
+
+      // Process the received command only if a new line was received
+      if (data.length() > 0) {
+        processCommand(data); // Process the received command
+
+        // Check if the detected object matches the desired object
+        if (object_name == desiredObject) {
+          objectFound = true;
+          detectedPosition = i + 1; // Store the index of the detected position
+          Serial.print("Desired object found at position: ");
+          Serial.println(positions[i]);
+          break; // Exit the loop as the desired object is found
+        }
+      }
+    }
+
+    if (!objectFound) {
+      Serial.println("Desired object not found in this scan. Retrying...");
+    }
+  }
+
+  // Make a decision based on the detected position
+  Serial.println("Executing hardcoded route for the detected position...");
+  if (detectedPosition == 1) {
+    routeForBox1();
+  } else if (detectedPosition == 2) {
+    routeForBox2();
+  } else if (detectedPosition == 3) {
+    routeForBox3();
+  } else {
+    Serial.println("Error: Invalid position detected.");
+  }
 }
