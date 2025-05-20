@@ -93,6 +93,7 @@ void setup() {
 
 void loop() {
   // reads from serial port if data is available
+  /*
   if (Serial.available() > 0) {
     // Read the incoming data as a string
     String data = Serial.readStringUntil('\n'); // Read until newline character
@@ -100,7 +101,7 @@ void loop() {
     // Process the received command
     processCommand(data);
   }
-
+  */
   // calibration_code();
   
   if (!hardCodedCompletion) {
@@ -498,6 +499,7 @@ void scanForObject(String desiredObject) {
       cameraServo.write(positions[i]);
       Serial.print("Camera rotated to position: ");
       Serial.println(positions[i]);
+      delay(1000);
 
       // Clear the buffer before waiting for new data
       Serial.println("Clearing buffer...");
