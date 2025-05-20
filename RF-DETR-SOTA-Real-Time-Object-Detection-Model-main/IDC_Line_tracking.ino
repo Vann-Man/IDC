@@ -487,6 +487,9 @@ void scanForObject(String desiredObject) {
   bool objectFound = false;
   int detectedPosition = -1; // Variable to store the index of the detected position
 
+  // Set the timeout for Serial.readStringUntil to 7 seconds
+  Serial.setTimeout(8000);
+
   while (!objectFound) { // Keep scanning until the desired object is found
     Serial.println("Starting a new scan...");
 
@@ -496,32 +499,21 @@ void scanForObject(String desiredObject) {
       Serial.print("Camera rotated to position: ");
       Serial.println(positions[i]);
 
-      // Clear the serial buffer before waiting for new data
+      // Clear the buffer before waiting for new data
+      Serial.println("Clearing buffer...");
       while (Serial.available() > 0) {
         Serial.read(); // Discard any leftover data
       }
 
-      // Wait until a command is received
+      // Wait for new data from the Raspberry Pi
       Serial.println("Waiting for command...");
-      while (Serial.available() == 0) {
-        // Do nothing, just wait for data to become available
-      }
-
-      // Wait for a new line of data from the Raspberry Pi
-      String data = "";
-      while (Serial.available() > 0) {
-        char incomingChar = Serial.read(); // Read one character at a time
-        if (incomingChar == '\n') { // Check for the end of the line
-          break; // Exit the loop when a new line is received
-        }
-        data += incomingChar; // Append the character to the data string
-      }
+      String data = Serial.readStringUntil('\n'); // Read until newline character
 
       // Debugging output for received data
       Serial.print("Received data: ");
       Serial.println(data);
 
-      // Process the received command only if a new line was received
+      // Process the received command only if valid data was received
       if (data.length() > 0) {
         processCommand(data); // Process the received command
 
@@ -533,6 +525,8 @@ void scanForObject(String desiredObject) {
           Serial.println(positions[i]);
           break; // Exit the loop as the desired object is found
         }
+      } else {
+        Serial.println("No valid data received.");
       }
     }
 
