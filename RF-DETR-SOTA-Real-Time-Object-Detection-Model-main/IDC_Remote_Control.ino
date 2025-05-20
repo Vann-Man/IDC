@@ -1,8 +1,9 @@
-#include <PWMServo.h>
-
-
+#include <ServoTimer2.h>
 #include <avdweb_AnalogReadFast.h>
 #include <CytronMotorDriver.h>
+#include <SoftwareSerial.h>
+
+
 
 
 
@@ -11,9 +12,23 @@ CytronMD leftMotor(PWM_PWM, 3, 9);   // PWM 1A = Pin 3, PWM 1B = Pin 9.
 CytronMD rightMotor(PWM_PWM, 10, 11); // PWM 2A = Pin 10, PWM 2B = Pin 11.
 
 
-PWMServo clawServo;
-PWMServo liftServo;
-PWMServo cameraServo;
+ServoTimer2 clawServo;
+ServoTimer2 liftServo;
+ServoTimer2 cameraServo;
+// configure Bluetooth 
+SoftwareSerial BTSerial(BT_TX, BT_RX); // Maker UNO RX, TX
+
+//Declare button shortcuts
+#define FORWARD 'F'
+#define BACKWARD 'B'
+#define LEFT 'L'
+#define RIGHT 'R'
+#define CIRCLE 'C'
+#define CROSS 'X'
+#define TRIANGLE 'T'
+#define SQUARE 'S'
+#define START 'A'
+#define PAUSE 'P'
 
 //Declare pin shortcuts
 #define left_IR A1
@@ -38,6 +53,10 @@ float target, error, integral, derivative, pastError, correction;
 
 // motor speed adjustable variables
 float leftMotorSpeed, rightMotorSpeed;
+
+// bluetooth variables
+boolean BTConnect = false;
+char inChar;
 
 // miscellaneous variables
 unsigned long time_now;
@@ -68,13 +87,27 @@ void clawPosition(int position, int reduceSpeed)
 
 
 void setup() {
+  Serial.begin(9600);  // Set the baud rate for serial communication
+  BTSerial.begin(9600);
+  liftServo.attach(liftServoPin);
+  clawServo.attach(clawServoPin);
+  liftServo.write(0);
+  clawServo.write(0); // 90 is close, 0 is open
 
+
+  delay(1000);
 
 }
 
 
 
 void loop() {
+
+   if (BTSerial.available()) {
+    inChar = BTSerial.read();
+    Serial.println(inChar);
+    executeCommand(inChar);
+  }
   
 }
 
@@ -176,5 +209,59 @@ void liftPosition(int position, int reduceSpeed) {
       delay(reduceSpeed);
 
     }
+  }
+}
+
+
+void loop() {
+  if (Serial.available()) {
+    char command = Serial.read();
+    executeCommand(command);
+  }
+  // Continue with other tasks in your main loop
+}
+
+void executeCommand(char command) {
+  switch (command) {
+    case FORWARD:
+      // Perform action for moving forward
+      moveForward(2);
+      break;
+    case BACKWARD:
+      // Perform action for moving backward
+      moveBackward(2);
+      break;
+    case LEFT:
+      // Perform action for turning left
+      turnLeft(2);
+      break;
+    case RIGHT:
+      // Perform action for turning right
+      turnRight(2);
+      break;
+    case CIRCLE:
+      // Perform action for circle
+      liftServo.write(clawServo.read() + 2);
+      break;
+    case CROSS:
+      // Perform action for immediate stop or crossing
+      liftServo.write(clawServo.read() - 2);
+      break;
+    case TRIANGLE:
+      // Perform action for toggling a state (e.g., LED on/off)
+      clawServo.write(clawServo.read() + 2);
+      break;
+    case SQUARE:
+      clawServo.write(clawServo.read() - 2);
+      break;
+    case START:
+      // Perform action for starting a process or operation
+      break;
+    case PAUSE:
+      // Perform action for pausing a process or operation
+      break;
+    default:
+      // Invalid command received
+      break;
   }
 }
