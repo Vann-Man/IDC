@@ -22,7 +22,7 @@ Servo cameraServo;
 #define liftServoPin 2
 #define cameraServoPin 13
 
-/*---     VARIABLE DECLARATION      ---*/
+//---     VARIABLE DECLARATION      ---/
 
 // Store parsed data from RPi
 String object_type;
@@ -46,20 +46,20 @@ bool hardCodedCompletion;
 // constants to calibrate 
 
 // IR Thresholds, ESSENTIAL FOR MAPPED VALUES
-const int left_IR_Threshold = 630; 
-const int right_IR_Threshold = 740;
+const int left_IR_Threshold = 650; 
+const int right_IR_Threshold = 800;
 const int leftmost_IR_Threshold = 600;
-const int left_IR_Minimum = 30;
-const int right_IR_Minimum = 35;
-const int leftmost_IR_Minimum = 50;
+const int left_IR_Minimum = 70;
+const int right_IR_Minimum = 40;
+const int leftmost_IR_Minimum = 80;
 int baseSpeed = 110;
-float KP = 0.27 ; // proportional - how sensitive to turn every time
+float KP = 0.24 ; // proportional - how sensitive to turn every time
 float KI = 0.0; // integral - how much correction from past error, reducing steady state error over time
-float KD = 1.0; // derivative - how much correction from differences from error - pastError over time
+float KD = 0.9; // derivative - how much correction from differences from error - pastError over time
 
 
 
-/*---     FUNCTION DECLARATION      ---*/
+//---     FUNCTION DECLARATION      ---/
 void pid_loop();
 void calibration_code();
 bool Junction();
@@ -72,8 +72,14 @@ void moveForward(unsigned long duration);
 void moveBackward(unsigned long duration);
 void liftPosition(int position, int reduceSpeed);
 void clawPosition(int position, int reduceSpeed);
-
-
+void route1();
+void route2();
+void route3();
+void routeForBox1();
+void routeForBox2();
+void routeForBox3();
+void processCommand(String command);
+void scanForObject(String desiredObject);
 
 void setup() {
   // set IRs to INPUT
@@ -82,15 +88,17 @@ void setup() {
   pinMode(leftmost_IR, INPUT);
   liftServo.attach(liftServoPin);
   clawServo.attach(clawServoPin);
-  //cameraServo.attach(cameraServoPin);
+  cameraServo.attach(cameraServoPin);
   liftServo.write(0);
   clawServo.write(0); // 90 is close, 0 is open
+  cameraServo.write(90);
   junctionDetect = false;
   hardCodedCompletion = false;
   Serial.begin(9600);
   delay(500);
-}
+  route3();
 
+}
 void loop() {
   // reads from serial port if data is available
   /*
@@ -101,11 +109,19 @@ void loop() {
     // Process the received command
     processCommand(data);
   }
-  */
+*/
+
   // calibration_code();
   
   if (!hardCodedCompletion) {
-    route1();
+    /*
+    // get out of box
+    moveForward(850);
+    Serial.println("bing bong forward");
+    delay(1000);
+    */
+    // route1();
+    
     // liftPosition(0, 10);
     //clawPosition(90, 10);
     hardCodedCompletion = true;
@@ -114,12 +130,9 @@ void loop() {
 }
 
 
-/*--- Hard-coded Routes ---*/
+//--- Hard-coded Routes ---/
 
 void route1() {
-    moveForward(900);
-    Serial.println("bing bong forward");
-    delay(1000);
     turnLeft(430);
     Serial.println("left bing bong");
     delay(400);
@@ -129,32 +142,94 @@ void route1() {
     moveForward(150);
     delay(500);
     // claw logic
-    clawPosition(95, 3);
-    turnLeft(1000);
+    clawPosition(90, 3);
+    delay(2000);
+    turnLeft(800);
     Serial.println("turn around bang");
-    delay(500);
+    delay(1000);
+    junctionDetect = false;
     lineFollowWhiteJunction();
-    calibration_code();
     Serial.println("found tray");
-    delay(500);
+    delay(3000);
     moveForward(300);
-    delay(500);
-    turnRight(450);
+    delay(2000);
+    // turnRight(400);
     Serial.println("turned to tray");
-    delay(500);
+    delay(2000);
     clawPosition(0, 3);
+    delay(2000);
     Serial.println("released claw");
-    moveBackward(200);
-    turnLeft(1000);
-    Serial.println("moved back and turned toward line")
+    moveBackward(150);
+    delay(2000);
+    turnLeft(415);
+    Serial.println("moved back and turned toward line");
+}
+
+void route2() {
+  Serial.println("route 2 start!");
+  lineFollowJunction();
+  delay(1000);
+  moveForward(250);
+  delay(1000);
+  lineFollowJunction();
+  turnLeft(100);
+  delay(2000);
+  moveForward(250);
+  clawPosition(90, 3);
+  delay(2000);
+  turnLeft(720);
+  delay(500);
+  moveForward(250);
+  delay(500);
+  lineFollowWhiteJunction();
+  clawPosition(0, 3);
+  delay(2000);
+  turnLeft(800);
+
+}
+
+void route3() {
+  Serial.println("route 3 start!");
+  clawPosition(0, 3);
+  delay(2000);
+  lineFollowJunction();
+  moveForward(450);
+  delay(1000);
+  turnLeft(450);
+  delay(2000);
+  lineFollowJunction();
+  Serial.println("end of route 3");
+  routeForBox1();
+  /*
+  clawPosition(90, 3); //grab ts
+  delay(2000);
+  turnLeft(600);
+  delay(1000);
+  lineFollowWhiteJunction();
+  moveForward(450);
+  delay(2000);
+  turnLeft(300);
+  clawPosition(0, 3);
+  */
+  
 
 
-    // create LINE FOLLOW WHITE JUNCTION CODE!
+
 }
 
 void routeForBox1() {
   Serial.println("route for box 1");
-  // Add your hardcoded logic for BURGER here
+  turnLeft(350);
+  delay(1000);
+  moveForward(1050);
+  delay(1000);
+  clawPosition(90, 4);
+  delay(1000);
+  turnLeft(250);
+  moveForward(1700);
+  
+  
+  Serial.println("box 1 complete");
 }
 
 void routeForBox2() {
@@ -170,7 +245,7 @@ void routeForBox3() {
 
 
 
-/*--- Arduino-Specific Functions -- -*/
+//--- Arduino-Specific Functions -- -/
 
 void pid_loop() {
   int left_IR_value = analogReadFast(left_IR);
@@ -283,7 +358,7 @@ bool whiteJunction(unsigned long duration) {
   int right = analogReadFast(right_IR);
   Serial.println("Checking for white junction...");
   // Detects if both left and right sensors see white
-  if ((left <= (left_IR_Minimum + 100)) && (right <= (right_IR_Minimum + 100))) {
+  if ((left <= (left_IR_Minimum + 150)) && (right <= (right_IR_Minimum + 150))) {
     if (startTime == 0) {
       startTime = millis(); // Start the timer when the condition is first met
     }
@@ -325,7 +400,7 @@ void lineFollowJunction() {
 void lineFollowWhiteJunction() {
   junctionDetect = false;
   startTime = 0; // Tracks when the condition was first met
-  while (!whiteJunction(800)) { // If junction not detected, keep following the line
+  while (!whiteJunction(1000)) { // If junction not detected, keep following the line
     pid_loop();
     Serial.print("still junctioning...");
   }
@@ -335,10 +410,10 @@ void lineFollowWhiteJunction() {
     Serial.println("junction detected!");
   
 }
-/*--- Basic Movement Functions ---*/
+//--- Basic Movement Functions ---/
 
 void turnLeft(unsigned long duration) {
-  //     turnLeft(480); // 90 degree left turn
+  //     turnLeft(480); // 90 degree left tu`rn
   unsigned long startTime = millis(); // start time
 
   while (millis() - startTime < duration) { // while time taken less than duration
@@ -440,7 +515,7 @@ void liftPosition(int position, int reduceSpeed) {
     }
   }
 }
-/*--- Integration with Raspberry Pi Code Functions ---*/
+//--- Integration with Raspberry Pi Code Functions ---/
 
 void processCommand(String command) {
 
@@ -484,7 +559,7 @@ void processCommand(String command) {
 }
 
 void scanForObject(String desiredObject) {
-  int positions[] = {45, 90, 135}; // Camera positions to scan (in degrees)
+  int positions[] = {0, 55, 120}; // Camera positions to scan (in degrees)
   bool objectFound = false;
   int detectedPosition = -1; // Variable to store the index of the detected position
 

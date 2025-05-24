@@ -19,7 +19,7 @@ HOTDOG_CLASS_ID = CUSTOM_CLASSES.index("HOTDOG")
 LOW_THRESHOLD = 0.15
 HIGH_THRESHOLD = 0.45
 
-TARGET_RESOLUTION = (224, 224)
+TARGET_RESOLUTION = (320, 320)
 FRAME_SKIP = 5
 FPS_LIMIT = 30
 
@@ -40,7 +40,7 @@ cap = cv2.VideoCapture(0)
 frame_count = 0
 
 # Optimized resizing function
-def fast_resize(image, size=(224, 224)):
+def fast_resize(image, size=(320, 320)):
     h, w, _ = image.shape
     min_dim = min(h, w)
     start_x = (w - min_dim) // 2
