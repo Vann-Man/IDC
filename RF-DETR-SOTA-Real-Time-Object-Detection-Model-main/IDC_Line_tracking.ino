@@ -46,12 +46,12 @@ bool hardCodedCompletion;
 // constants to calibrate 
 
 // IR Thresholds, ESSENTIAL FOR MAPPED VALUES
-const int left_IR_Threshold = 650; 
-const int right_IR_Threshold = 800;
-const int leftmost_IR_Threshold = 600;
-const int left_IR_Minimum = 70;
-const int right_IR_Minimum = 40;
-const int leftmost_IR_Minimum = 80;
+const int left_IR_Threshold = 700; 
+const int right_IR_Threshold = 750;
+const int leftmost_IR_Threshold = 520;
+const int left_IR_Minimum = 54;
+const int right_IR_Minimum = 50;
+const int leftmost_IR_Minimum = 90;
 int baseSpeed = 110;
 float KP = 0.24 ; // proportional - how sensitive to turn every time
 float KI = 0.0; // integral - how much correction from past error, reducing steady state error over time
@@ -72,9 +72,9 @@ void moveForward(unsigned long duration);
 void moveBackward(unsigned long duration);
 void liftPosition(int position, int reduceSpeed);
 void clawPosition(int position, int reduceSpeed);
-void route1();
-void route2();
-void route3();
+void milkRoute();
+void waterRoute();
+void routeToFood();
 void routeForBox1();
 void routeForBox2();
 void routeForBox3();
@@ -96,7 +96,8 @@ void setup() {
   hardCodedCompletion = false;
   Serial.begin(9600);
   delay(500);
-  route3();
+  waterRoute();
+  // routeToFood();
 
 }
 void loop() {
@@ -132,19 +133,24 @@ void loop() {
 
 //--- Hard-coded Routes ---/
 
-void route1() {
+void milkRoute() {
+    moveForward(850);
+    Serial.println("bing bong forward");
+    delay(1000);
     turnLeft(430);
     Serial.println("left bing bong");
     delay(400);
     junctionDetect = false;
     lineFollowJunction();
     delay(500);
-    moveForward(150);
+    // moveForward(200);
     delay(500);
+    turnLeft(100);
+    delay(100);
     // claw logic
-    clawPosition(90, 3);
+    clawServo.write(90);
     delay(2000);
-    turnLeft(800);
+    turnLeft(850);
     Serial.println("turn around bang");
     delay(1000);
     junctionDetect = false;
@@ -156,7 +162,7 @@ void route1() {
     // turnRight(400);
     Serial.println("turned to tray");
     delay(2000);
-    clawPosition(0, 3);
+    clawPosition(10, 3);
     delay(2000);
     Serial.println("released claw");
     moveBackward(150);
@@ -165,8 +171,11 @@ void route1() {
     Serial.println("moved back and turned toward line");
 }
 
-void route2() {
+void waterRoute() {
   Serial.println("route 2 start!");
+   moveForward(850);
+  Serial.println("bing bong forward");
+  delay(1000);
   lineFollowJunction();
   delay(1000);
   moveForward(250);
@@ -177,20 +186,20 @@ void route2() {
   moveForward(250);
   clawPosition(90, 3);
   delay(2000);
-  turnLeft(720);
-  delay(500);
+  turnLeft(800);
+  delay(1000);
   moveForward(250);
-  delay(500);
+  delay(1000);
   lineFollowWhiteJunction();
-  clawPosition(0, 3);
+  clawPosition(10, 3);
   delay(2000);
   turnLeft(800);
 
 }
 
-void route3() {
+void routeToFood() {
   Serial.println("route 3 start!");
-  clawPosition(0, 3);
+  clawPosition(10, 3);
   delay(2000);
   lineFollowJunction();
   moveForward(450);
@@ -199,7 +208,7 @@ void route3() {
   delay(2000);
   lineFollowJunction();
   Serial.println("end of route 3");
-  routeForBox1();
+  routeForBox3();
   /*
   clawPosition(90, 3); //grab ts
   delay(2000);
@@ -225,8 +234,9 @@ void routeForBox1() {
   delay(1000);
   clawPosition(90, 4);
   delay(1000);
-  turnLeft(250);
-  moveForward(1700);
+  turnLeft(450);
+  moveForward(2100);
+  clawPosition(0, 4);
   
   
   Serial.println("box 1 complete");
@@ -234,11 +244,31 @@ void routeForBox1() {
 
 void routeForBox2() {
   Serial.println("route for box 2");
-  // Add your hardcoded logic for HOTDOG here
+  moveForward(500);
+  delay(500);
+  clawPosition(90, 4);
+  turnLeft(755);
+  delay(1000);
+  moveForward(2900);
+  clawPosition(0, 4);
+
 }
 
 void routeForBox3() {
   Serial.println("route for box 3");
+  turnRight(280);
+  delay(1000);
+  moveForward(1050);
+  delay(1000);
+  clawPosition(90, 4);
+  delay(1000);
+  
+  turnLeft(880);
+  moveForward(3600);
+  clawPosition(0, 4);
+  
+  
+  Serial.println("box 3 complete");
   // Add your hardcoded logic for SANDWICH here
 }
 
@@ -358,7 +388,7 @@ bool whiteJunction(unsigned long duration) {
   int right = analogReadFast(right_IR);
   Serial.println("Checking for white junction...");
   // Detects if both left and right sensors see white
-  if ((left <= (left_IR_Minimum + 150)) && (right <= (right_IR_Minimum + 150))) {
+  if ((left <= (left_IR_Minimum + 180)) && (right <= (right_IR_Minimum + 180))) {
     if (startTime == 0) {
       startTime = millis(); // Start the timer when the condition is first met
     }
@@ -400,7 +430,7 @@ void lineFollowJunction() {
 void lineFollowWhiteJunction() {
   junctionDetect = false;
   startTime = 0; // Tracks when the condition was first met
-  while (!whiteJunction(1000)) { // If junction not detected, keep following the line
+  while (!whiteJunction(1500)) { // If junction not detected, keep following the line
     pid_loop();
     Serial.print("still junctioning...");
   }
@@ -564,7 +594,7 @@ void scanForObject(String desiredObject) {
   int detectedPosition = -1; // Variable to store the index of the detected position
 
   // Set the timeout for Serial.readStringUntil to 7 seconds
-  Serial.setTimeout(8000);
+  Serial.setTimeout(15000);
 
   while (!objectFound) { // Keep scanning until the desired object is found
     Serial.println("Starting a new scan...");
@@ -585,7 +615,7 @@ void scanForObject(String desiredObject) {
       // Wait for new data from the Raspberry Pi
       Serial.println("Waiting for command...");
       unsigned long startTime = millis();
-      while (millis() - startTime < 7000) { // Wait for up to 7 seconds
+      while (millis() - startTime < 15000) { // Wait for up to 7 seconds
         if (Serial.available() > 0) {
           String data = Serial.readStringUntil('\n'); // Read until newline character
 
