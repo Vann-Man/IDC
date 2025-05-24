@@ -96,8 +96,9 @@ void setup() {
   hardCodedCompletion = false;
   Serial.begin(9600);
   delay(500);
-  waterRoute();
+  // waterRoute();
   // routeToFood();
+  scanForObject("HOTDOG");
 
 }
 void loop() {
