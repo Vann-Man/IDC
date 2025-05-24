@@ -584,26 +584,35 @@ void scanForObject(String desiredObject) {
 
       // Wait for new data from the Raspberry Pi
       Serial.println("Waiting for command...");
-      String data = Serial.readStringUntil('\n'); // Read until newline character
+      unsigned long startTime = millis();
+      while (millis() - startTime < 7000) { // Wait for up to 7 seconds
+        if (Serial.available() > 0) {
+          String data = Serial.readStringUntil('\n'); // Read until newline character
 
-      // Debugging output for received data
-      Serial.print("Received data: ");
-      Serial.println(data);
+          // Debugging output for received data
+          Serial.print("Received data: ");
+          Serial.println(data);
 
-      // Process the received command only if valid data was received
-      if (data.length() > 0) {
-        processCommand(data); // Process the received command
+          // Process the received command only if valid data was received
+          if (data.length() > 0) {
+            processCommand(data); // Process the received command
 
-        // Check if the detected object matches the desired object
-        if (object_name == desiredObject) {
-          objectFound = true;
-          detectedPosition = i + 1; // Store the index of the detected position
-          Serial.print("Desired object found at position: ");
-          Serial.println(positions[i]);
-          break; // Exit the loop as the desired object is found
+            // Check if the detected object matches the desired object
+            if (object_name == desiredObject) {
+              objectFound = true;
+              detectedPosition = i + 1; // Store the index of the detected position
+              Serial.print("Desired object found at position: ");
+              Serial.println(positions[i]);
+              break; // Exit the loop as the desired object is found
+            }
+          } else {
+            Serial.println("No valid data received.");
+          }
         }
-      } else {
-        Serial.println("No valid data received.");
+      }
+
+      if (objectFound) {
+        break; // Exit the outer loop if the object is found
       }
     }
 

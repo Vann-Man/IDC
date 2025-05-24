@@ -96,6 +96,7 @@ while True:
             data_to_send = f"OBJECT,{CUSTOM_CLASSES[class_id]},{width:.2f},{height:.2f},{center_x:.2f},{center_y:.2f}\n"
             # arduino.write(data_to_send.encode())  # Send data as bytes
             print(f"Sent to Arduino: {data_to_send}")
+            time.sleep(0.2)  # Small delay to ensure data is sent correctly
 
         else:
             label = f"Unknown {class_id} {confidence:.2f}"
