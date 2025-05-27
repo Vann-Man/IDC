@@ -3,13 +3,14 @@ import time
 import cv2
 from PIL import Image
 from rfdetr import RFDETRBase
+import numpy as np
 
 # Define custom classes
 CUSTOM_CLASSES = ["placeholder", "BANDAGE", "SYRINGE", "GAUZE"]
 
 # Load the model
 print("Loading model...")
-model = RFDETRBase(pretrain_weights="cubesmodel/checkpoint_best_total.pth")
+model = RFDETRBase(pretrain_weights="checkpoint_best_total_CUBES.pth")
 print("Model loaded successfully!")
 
 # Initialize serial communication with Arduino
@@ -33,24 +34,44 @@ if not cap.isOpened():
     print("Error: Unable to access the camera")
     exit()
 
+previous_frame = None  # Store the previous frame for comparison
+
 try:
     while True:
+        # Capture a frame from the camera
+        ret, frame = cap.read()
+        if not ret or frame is None:
+            print("Error: Failed to capture frame from the camera")
+            continue
+
+        # Resize and preprocess the frame
+        resized_frame = fast_resize(frame)
+
+        # Compare the current frame with the previous frame
+        if previous_frame is not None:
+            # Calculate the absolute difference between frames
+            frame_diff = cv2.absdiff(resized_frame, previous_frame)
+            diff_sum = np.sum(frame_diff)
+
+            # If the difference is small but the frame is new, send the command
+            if diff_sum < 1000:  # Threshold for detecting significant changes
+                print("Frame hasn't changed significantly, but it's a new frame.")
+                previous_frame = resized_frame.copy()  # Update the previous frame
+            else:
+                print("Frame has changed significantly.")
+                previous_frame = resized_frame.copy()  # Update the previous frame
+        else:
+            # First frame, initialize previous_frame
+            previous_frame = resized_frame.copy()
+
+        # Display the resized frame
+        cv2.imshow("Camera Feed (Resized)", resized_frame)
+
         # Read command from Arduino
         line = arduino.readline().decode().strip()
         if line == "#DETECT":
-            # Capture a frame from the camera
-            ret, frame = cap.read()
-            if not ret or frame is None:
-                print("Error: Failed to capture frame from the camera")
-                continue
-
-            # Resize and preprocess the frame
-            resized_frame = fast_resize(frame)
             rgb = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
             image_pil = Image.fromarray(rgb)
-
-            # Display the resized frame
-            cv2.imshow("Camera Feed (Resized)", resized_frame)
 
             # Run object detection
             detections = model.predict(image_pil, threshold=0.2)
