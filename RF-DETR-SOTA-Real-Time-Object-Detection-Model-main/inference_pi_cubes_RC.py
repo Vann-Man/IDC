@@ -67,9 +67,9 @@ try:
             arduino.write(result.encode())
             print("Sent:", result)
 
-            # Exit the camera feed on pressing 'q'
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+        # Ensure the OpenCV window updates
+        if cv2.waitKey(1) & 0xFF == ord('q'):  # Exit on pressing 'q'
+            break
 
 except KeyboardInterrupt:
     print("Exiting program...")
