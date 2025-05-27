@@ -258,6 +258,7 @@ void executeCommand(char command) {
     case TRIANGLE:
       // Perform action for toggling a state (e.g., LED on/off)
       clawServo.write(0);
+      Serial.print("claw open");
       break;
     case SQUARE:
       clawServo.write(90);
@@ -265,7 +266,6 @@ void executeCommand(char command) {
       Serial.println(clawServo.read());
       break;
     case START:
-      Serial.print("claw open");
       // Perform action for starting a process or operation
       break;
     case PAUSE:
