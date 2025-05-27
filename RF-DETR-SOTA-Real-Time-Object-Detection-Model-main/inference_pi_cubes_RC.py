@@ -8,11 +8,13 @@ CUSTOM_CLASSES = ["placeholder", "BANDAGE", "SYRINGE", "GAUZE"]
 model = RFDETRBase(pretrain_weights="cubesmodel/checkpoint_best_total.pth")
 
 # Serial config
-ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
+arduino = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
 time.sleep(2)  # Wait for Arduino
-ser.reset_input_buffer()
+arduino.reset_input_buffer()
 
 def fast_resize(image, size=(720, 720)):
+    if image is None:
+        raise ValueError("Invalid image passed to fast_resize()")
     h, w, _ = image.shape
     min_dim = min(h, w)
     x = (w - min_dim) // 2
@@ -20,14 +22,18 @@ def fast_resize(image, size=(720, 720)):
     return cv2.resize(image[y:y+min_dim, x:x+min_dim], size)
 
 while True:
-    line = ser.readline().decode().strip()
+    line = arduino.readline().decode().strip()
     if line == "#DETECT":
         cap = cv2.VideoCapture(0)
+        if not cap.isOpened():
+            print("Error: Unable to access the camera")
+            continue
+
         ret, frame = cap.read()
         cap.release()
 
-        if not ret:
-            print("Failed to capture image")
+        if not ret or frame is None:
+            print("Error: Failed to capture frame from the camera")
             continue
 
         frame = fast_resize(frame)
@@ -44,5 +50,5 @@ while True:
 
         # Format: BANDAGE 1 SYRINGE 0 GAUZE 2
         result = f"BANDAGE {class_counts['BANDAGE']} SYRINGE {class_counts['SYRINGE']} GAUZE {class_counts['GAUZE']}\n"
-        ser.write(result.encode())
+        arduino.write(result.encode())
         print("Sent:", result)
