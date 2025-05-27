@@ -47,11 +47,11 @@ bool hardCodedCompletion;
 
 // IR Thresholds, ESSENTIAL FOR MAPPED VALUES
 const int left_IR_Threshold = 700; 
-const int right_IR_Threshold = 750;
-const int leftmost_IR_Threshold = 520;
-const int left_IR_Minimum = 54;
-const int right_IR_Minimum = 50;
-const int leftmost_IR_Minimum = 90;
+const int right_IR_Threshold = 780;
+const int leftmost_IR_Threshold = 560;
+const int left_IR_Minimum = 70;
+const int right_IR_Minimum = 60;
+const int leftmost_IR_Minimum = 130;
 int baseSpeed = 110;
 float KP = 0.24 ; // proportional - how sensitive to turn every time
 float KI = 0.0; // integral - how much correction from past error, reducing steady state error over time
@@ -96,9 +96,9 @@ void setup() {
   hardCodedCompletion = false;
   Serial.begin(9600);
   delay(500);
-  // waterRoute();
-  // routeToFood();
-  scanForObject("HOTDOG");
+  milkRoute();
+  routeToFood();
+  // scanForObject("HOTDOG");
 
 }
 void loop() {
@@ -144,14 +144,12 @@ void milkRoute() {
     junctionDetect = false;
     lineFollowJunction();
     delay(500);
-    // moveForward(200);
+    //moveForward(200);
     delay(500);
-    turnLeft(100);
-    delay(100);
     // claw logic
-    clawServo.write(90);
+    clawPosition(75, 3);
     delay(2000);
-    turnLeft(850);
+    turnLeft(880);
     Serial.println("turn around bang");
     delay(1000);
     junctionDetect = false;
@@ -168,7 +166,7 @@ void milkRoute() {
     Serial.println("released claw");
     moveBackward(150);
     delay(2000);
-    turnLeft(415);
+    turnLeft(450);
     Serial.println("moved back and turned toward line");
 }
 
@@ -184,7 +182,7 @@ void waterRoute() {
   lineFollowJunction();
   turnLeft(100);
   delay(2000);
-  moveForward(250);
+  moveForward(270);
   clawPosition(90, 3);
   delay(2000);
   turnLeft(800);
@@ -265,7 +263,7 @@ void routeForBox3() {
   delay(1000);
   
   turnLeft(880);
-  moveForward(3600);
+  moveForward(3900);
   clawPosition(0, 4);
   
   

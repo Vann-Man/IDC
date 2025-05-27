@@ -38,11 +38,15 @@ previous_frame = None  # Store the previous frame for comparison
 
 try:
     while True:
-        # Capture a frame from the camera
-        ret, frame = cap.read()
-        if not ret or frame is None:
-            print("Error: Failed to capture frame from the camera")
-            continue
+        # Skip frames to get the most recent one
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret or frame is None:
+                print("Error: Failed to capture frame from the camera")
+                continue
+            # Break the loop once the most recent frame is captured
+            if cap.get(cv2.CAP_PROP_POS_FRAMES) >= cap.get(cv2.CAP_PROP_FRAME_COUNT):
+                break
 
         # Resize and preprocess the frame
         resized_frame = fast_resize(frame)
@@ -74,7 +78,7 @@ try:
             image_pil = Image.fromarray(rgb)
 
             # Run object detection
-            detections = model.predict(image_pil, threshold=0.2)
+            detections = model.predict(image_pil, threshold=0.3)
             class_counts = {"BANDAGE": 0, "SYRINGE": 0, "GAUZE": 0}
 
             # Count detected objects
