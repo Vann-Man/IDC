@@ -30,16 +30,20 @@ while True:
             continue
 
         ret, frame = cap.read()
-        cap.release()
-
         if not ret or frame is None:
             print("Error: Failed to capture frame from the camera")
+            cap.release()
             continue
 
+        # Display the camera feed
+        cv2.imshow("Camera Feed", frame)
+
+        # Resize and preprocess the frame
         frame = fast_resize(frame)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image_pil = Image.fromarray(rgb)
 
+        # Run object detection
         detections = model.predict(image_pil, threshold=0.2)
         class_counts = {"BANDAGE": 0, "SYRINGE": 0, "GAUZE": 0}
 
@@ -52,3 +56,13 @@ while True:
         result = f"BANDAGE {class_counts['BANDAGE']} SYRINGE {class_counts['SYRINGE']} GAUZE {class_counts['GAUZE']}\n"
         arduino.write(result.encode())
         print("Sent:", result)
+
+        # Exit the camera feed on pressing 'q'
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+        cap.release()
+
+# Release resources
+cap.release()
+cv2.destroyAllWindows()
