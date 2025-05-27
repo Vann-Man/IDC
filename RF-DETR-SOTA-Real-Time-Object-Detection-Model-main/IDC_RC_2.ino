@@ -251,7 +251,6 @@ void executeCommand(char command) {
     case TRIANGLE:
       clawServo.write(0);
       Serial.print("claw open");
-      Serial.println("#DETECT");  // === NEW: trigger Pi
       break;
     case SQUARE:
       clawServo.write(90);
@@ -259,6 +258,7 @@ void executeCommand(char command) {
       Serial.println(clawServo.read());
       break;
     case START:
+      Serial.println("#DETECT");
       break;
     case PAUSE:
       break;
