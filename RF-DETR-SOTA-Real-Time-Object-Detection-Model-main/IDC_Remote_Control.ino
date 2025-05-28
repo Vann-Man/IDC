@@ -26,15 +26,15 @@
 #define BT_RX 9
 
 
-#define LED_BANDAGE 7
-#define LED_SYRINGE 8
-#define LED_GAUZE 9
+#define LED_BANDAGE 5 // Blue
+#define LED_SYRINGE 7 // Yellow
+#define LED_GAUZE 8 // Red
 
 void handlePiResponse(String response) {
   response.trim();
   digitalWrite(LED_BANDAGE, response.indexOf("BANDAGE 0") == -1 ? HIGH : LOW);
   digitalWrite(LED_SYRINGE, response.indexOf("SYRINGE 0") == -1 ? HIGH : LOW);
-  digitalWrite(LED_GAUZE,   response.indexOf("GAUZE 0")   == -1 ? HIGH : LOW);
+  digitalWrite(LED_GAUZE,   response.indexOf("GAUZE 0")   == -1 ? HIGH : LOW); 
   Serial.print("LEDs updated based on Pi reply: ");
   Serial.println(response);
 }
@@ -112,7 +112,7 @@ void setup() {
   BTSerial.begin(9600);
   liftServo.attach(liftServoPin);
   clawServo.attach(clawServoPin);
-  // liftServo.write(0);
+  liftServo.write(0);
   // clawServo.write(90); // 90 is close, 0 is open
   pinMode(LED_BANDAGE, OUTPUT);
   pinMode(LED_SYRINGE, OUTPUT);
@@ -135,6 +135,7 @@ void loop() {
     delay(10);
   }
 
+  
 
 
   while (Serial.available()) {

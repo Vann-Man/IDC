@@ -26,9 +26,9 @@
 #define BT_RX 9
 
 // === NEW: LED pins ===
-#define LED_BANDAGE 7
-#define LED_SYRINGE 8
-#define LED_GAUZE 9
+#define LED_BANDAGE 7 // Blue LED
+#define LED_SYRINGE 8 // Yellow LED``
+#define LED_GAUZE 9 // Red LED
 
 // Configure the motor driver
 CytronMD leftMotor(PWM_PWM, 3, 4);   // PWM 1A = Pin 3, PWM 1B = Pin 9.
@@ -125,6 +125,7 @@ void loop() {
     executeCommand(inChar);
     delay(10);
   }
+
 
   // === NEW: Listen to Pi response
   while (Serial.available()) {
