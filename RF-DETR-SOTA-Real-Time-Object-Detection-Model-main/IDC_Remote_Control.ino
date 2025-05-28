@@ -26,6 +26,22 @@
 #define BT_RX 9
 
 
+#define LED_BANDAGE 7
+#define LED_SYRINGE 8
+#define LED_GAUZE 9
+
+void handlePiResponse(String response) {
+  response.trim();
+  digitalWrite(LED_BANDAGE, response.indexOf("BANDAGE 0") == -1 ? HIGH : LOW);
+  digitalWrite(LED_SYRINGE, response.indexOf("SYRINGE 0") == -1 ? HIGH : LOW);
+  digitalWrite(LED_GAUZE,   response.indexOf("GAUZE 0")   == -1 ? HIGH : LOW);
+  Serial.print("LEDs updated based on Pi reply: ");
+  Serial.println(response);
+}
+
+
+
+
 // Configure the motor driver
 CytronMD leftMotor(PWM_PWM, 3, 4);   // PWM 1A = Pin 3, PWM 1B = Pin 9.
 CytronMD rightMotor(PWM_PWM, 11, 12); // PWM 2A = Pin 10, PWM 2B = Pin 11.
@@ -64,6 +80,9 @@ unsigned long start_time;
 bool junctionDetect;
 bool hardCodedCompletion;
 
+
+String piBuffer = "";
+
 // constants to calibrate 
 
 // IR Thresholds, ESSENTIAL FOR MAPPED VALUES
@@ -95,7 +114,9 @@ void setup() {
   clawServo.attach(clawServoPin);
   // liftServo.write(0);
   // clawServo.write(90); // 90 is close, 0 is open
-
+  pinMode(LED_BANDAGE, OUTPUT);
+  pinMode(LED_SYRINGE, OUTPUT);
+  pinMode(LED_GAUZE, OUTPUT);
 
 
   Serial.println("setup complete");
@@ -114,9 +135,18 @@ void loop() {
     delay(10);
   }
 
+
+
+  while (Serial.available()) {
+    char c = Serial.read();
+    if (c == '\n') {
+      handlePiResponse(piBuffer);
+      piBuffer = "";
+    } else {
+      piBuffer += c;
+    }
+  }
 }
-
-
 
 /*--- Basic Movement Functions ---*/
 
@@ -266,6 +296,7 @@ void executeCommand(char command) {
       Serial.println(clawServo.read());
       break;
     case START:
+      Serial.println("#DETECT");
       // Perform action for starting a process or operation
       break;
     case PAUSE:
