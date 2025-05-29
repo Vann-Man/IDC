@@ -46,16 +46,16 @@ bool hardCodedCompletion;
 // constants to calibrate 
 
 // IR Thresholds, ESSENTIAL FOR MAPPED VALUES
-const int left_IR_Threshold = 700; 
-const int right_IR_Threshold = 780;
-const int leftmost_IR_Threshold = 560;
-const int left_IR_Minimum = 70;
-const int right_IR_Minimum = 60;
-const int leftmost_IR_Minimum = 130;
-int baseSpeed = 110;
-float KP = 0.24 ; // proportional - how sensitive to turn every time
+const int left_IR_Threshold = 900; 
+const int right_IR_Threshold = 900;
+const int leftmost_IR_Threshold = 550;
+const int left_IR_Minimum = 100;
+const int right_IR_Minimum = 120;
+const int leftmost_IR_Minimum = 70;
+int baseSpeed = 120;
+float KP = 0.256 ; // proportional - how sensitive to turn every time
 float KI = 0.0; // integral - how much correction from past error, reducing steady state error over time
-float KD = 0.9; // derivative - how much correction from differences from error - pastError over time
+float KD = 0.92; // derivative - how much correction from differences from error - pastError over time
 
 
 
@@ -96,8 +96,11 @@ void setup() {
   hardCodedCompletion = false;
   Serial.begin(9600);
   delay(500);
-  milkRoute();
-  routeToFood();
+  
+  // milkRoute();
+  // routeToFood();
+  // scanForObject("BURGER");
+   routeForBox1();
   // scanForObject("HOTDOG");
 
 }
@@ -113,21 +116,8 @@ void loop() {
   }
 */
 
-  // calibration_code();
+    calibration_code();
   
-  if (!hardCodedCompletion) {
-    /*
-    // get out of box
-    moveForward(850);
-    Serial.println("bing bong forward");
-    delay(1000);
-    */
-    // route1();
-    
-    // liftPosition(0, 10);
-    //clawPosition(90, 10);
-    hardCodedCompletion = true;
-  }
 
 }
 
@@ -145,11 +135,11 @@ void milkRoute() {
     lineFollowJunction();
     delay(500);
     //moveForward(200);
-    delay(500);
+    delay(1000);
     // claw logic
     clawPosition(75, 3);
     delay(2000);
-    turnLeft(880);
+    turnLeft(800);
     Serial.println("turn around bang");
     delay(1000);
     junctionDetect = false;
@@ -180,12 +170,12 @@ void waterRoute() {
   moveForward(250);
   delay(1000);
   lineFollowJunction();
-  turnLeft(100);
+  turnLeft(120);
   delay(2000);
   moveForward(270);
   clawPosition(90, 3);
   delay(2000);
-  turnLeft(800);
+  turnLeft(790);
   delay(1000);
   moveForward(250);
   delay(1000);
@@ -207,7 +197,7 @@ void routeToFood() {
   delay(2000);
   lineFollowJunction();
   Serial.println("end of route 3");
-  routeForBox3();
+  // routeForBox3();
   /*
   clawPosition(90, 3); //grab ts
   delay(2000);
@@ -227,14 +217,15 @@ void routeToFood() {
 
 void routeForBox1() {
   Serial.println("route for box 1");
-  turnLeft(350);
+  turnLeft(380);
   delay(1000);
-  moveForward(1050);
+  moveForward(1200);
   delay(1000);
-  clawPosition(90, 4);
+  clawPosition(80, 4);
   delay(1000);
-  turnLeft(450);
-  moveForward(2100);
+  turnLeft(400);
+  delay(1000);
+  moveForward(2200);
   clawPosition(0, 4);
   
   
@@ -255,15 +246,16 @@ void routeForBox2() {
 
 void routeForBox3() {
   Serial.println("route for box 3");
-  turnRight(280);
+  turnRight(285);
   delay(1000);
   moveForward(1050);
   delay(1000);
   clawPosition(90, 4);
   delay(1000);
   
-  turnLeft(880);
-  moveForward(3900);
+  turnLeft(760);
+  delay(1000);
+  moveForward(4600);
   clawPosition(0, 4);
   
   
@@ -387,7 +379,7 @@ bool whiteJunction(unsigned long duration) {
   int right = analogReadFast(right_IR);
   Serial.println("Checking for white junction...");
   // Detects if both left and right sensors see white
-  if ((left <= (left_IR_Minimum + 180)) && (right <= (right_IR_Minimum + 180))) {
+  if ((left <= (left_IR_Minimum + 300)) && (right <= (right_IR_Minimum + 300))) {
     if (startTime == 0) {
       startTime = millis(); // Start the timer when the condition is first met
     }
@@ -588,7 +580,7 @@ void processCommand(String command) {
 }
 
 void scanForObject(String desiredObject) {
-  int positions[] = {0, 55, 120}; // Camera positions to scan (in degrees)
+  int positions[] = {120, 55, 0}; // Camera positions to scan (in degrees)
   bool objectFound = false;
   int detectedPosition = -1; // Variable to store the index of the detected position
 
